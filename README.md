@@ -1,6 +1,6 @@
 # FlareNet Particle Penetration Calculator (FPPC)
 
-We developed a Python program "FlareNet Particle Penetration Calculator (FPPC)" to calculate line losses of multi-part sampling lines. The target is to facilitate complicated calculations and help future researchers to expedite these cumbersome computations efficiently. For calculating particle penetration coefficients these loss mechanisms are considered:
+We developed a Python program "FlareNet Particle Penetration Calculator (FPPC)" to calculate line losses of multi-part sampling lines. The target is to facilitate complicated calculations and help future researchers to expedite these cumbersome computations efficiently. Different mechanism cause particles to be lost en route to the sampling device and now with this program user has an estimation about how much of the specific particle diameter has been lost and may correct their measurement. For calculating particle penetration coefficients these loss mechanisms are considered:
 
 1-	Diffusion<br />
 2-	Sedimentation (inclined lines included)<br />

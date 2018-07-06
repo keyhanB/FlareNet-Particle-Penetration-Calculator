@@ -10,7 +10,7 @@ We developed a Python program "FlareNet Particle Penetration Calculator (FPPC)" 
 6-	Inertial deposition: contraction<br />
 7-	Sampling probe loss
 
-![alt text](https://raw.githubusercontent.com/keyhanB/FlareNet-Particle-Penetration-Calculator/tree/master/Graph%20Output/Catalytic Stripper-DMA-CPMA - Main Graph.jpg)
+![alt text](Graph Output/Catalytic Stripper-DMA-CPMA - Main Graph.jpg)
 
 The line consists of multiple sections, and each section has its properties such as inner diameter, bend angle, gas temperature and flow rate, etc. The user should provide these properties to have the proper calculation. The list of the sections can be reached from the excel input folder. This assumption shows that each part is independent of another and the accuracy of the result depends on the accuracy of the input data.
 

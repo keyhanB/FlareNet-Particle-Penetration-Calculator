@@ -49,7 +49,7 @@ if __name__ == "__main__":
     eff_k = 0.1074  # effective density variable for the result to be in kg/m^3
     eff_dm = 2.46  # effective density variable for the result to be in kg/m^3
     Computed_data_Column = 19+1  # Number of variables of data for each section needed to be calculated (change if you want to add more variables)
-    Number_Particle_Var = 23+1  # Number of variables of data for each particle diameter needed to be calculated (change if you want to add more variables)
+    Number_Particle_Var = 22+1  # Number of variables of data for each particle diameter needed to be calculated (change if you want to add more variables)
     Y_limit_lower = 0.5  # Graph limit _ Y axis
     Y_limit_upper = 1.05  # Graph limit _ Y axis
     Y_Axis_Unit = 0.1  # Graph unit _ Y axis
@@ -126,6 +126,7 @@ if __name__ == "__main__":
     eta_Asp = [[1 for i in range (Nd)] for j in range (Input_Dimension_Row+1)]  # Aspiration penetration
     eta_Inlet = [[1 for i in range (Nd)] for j in range (Input_Dimension_Row+1)]  # Inlet transportation penetration
     e_Total = [[1 for i in range (Nd+1)] for j in range (Input_Dimension_Row+1)]  # Total penetration
+    Fitting_Coefficients = [[1 for i in range (Polynomial_Deg+1)] for j in range (Input_Dimension_Row+1)]  # Fitting line Coefficients for total penetration
 
     D_ratio = (D_large / D_small) ** (1 / (Nd-1))
     Particle_Variables = [[None for i in range (Number_Particle_Var)] for j in range (Nd+1)]
@@ -162,7 +163,6 @@ if __name__ == "__main__":
     Particle_Variables[i+1][20] = "Inlet Aspiration Efficiency"
     Particle_Variables[i+1][21] = "Inlet Transportation Efficiency"
     Particle_Variables[i+1][22] = "Total Penetration Efficiency"
-    Particle_Variables[i+1][23] = "Fitting Coefficients"
 
     for Section in range (1, Input_Dimension_Row):
         for i in range (Nd):
@@ -244,10 +244,11 @@ if __name__ == "__main__":
         Fit_Expression = ""
         for Deg in range (Polynomial_Deg):
             K = Polynomial_Deg-Deg
-            Particle_Variables[Deg+1][23] = Z[Deg]
-            Fit_Expression += "{:.3E}".format (Z[Deg])+" ."+"("+"ln (dp)"+")"+"$^{}$".format (K)+"+"+"\n"
+            Fitting_Coefficients[Section][Deg]= Z[Deg]
+            Fit_Expression += "{:.3E}".format (Z[Deg])+" ."+"("+"ln (dm)"+")"+"$^{}$".format (K)+"+"+"\n"
         Fit_Expression += "{:.3E}".format (Z[Polynomial_Deg])
-        Particle_Variables[Polynomial_Deg+1][23] = Z[Polynomial_Deg]
+        Fit_Expression += "\n"+"(dm in meter)"
+        Fitting_Coefficients[Section][Polynomial_Deg] = Z[Polynomial_Deg]
 
         #  Saving Data for the Section
         Output_Data_Excel_Section = "Section_"+str (Section)+".xlsx"
@@ -257,6 +258,11 @@ if __name__ == "__main__":
         for I in range (0, Nd+1):
             for J in range (Number_Particle_Var):
                 P_Var.write (I, J, Particle_Variables[I][J])
+        for I in range (0, Polynomial_Deg+1):
+            J = Number_Particle_Var
+            if I==0:
+                P_Var.write (I, J, "Fitting Coefficients")
+            P_Var.write (I+1, J, Fitting_Coefficients[Section][I])
         workbook2.close ()
 
         # Figures properties
@@ -318,10 +324,11 @@ if __name__ == "__main__":
     Fit_Expression = ""
     for Deg in range (Polynomial_Deg):
         K = Polynomial_Deg-Deg
-        e_Total[Deg+1][Nd] = Z[Deg]
+        Fitting_Coefficients[Input_Dimension_Row][Deg] = Z[Deg]
         Fit_Expression += "{:.3E}".format (Z[Deg])+" ."+"x"+"$^{}$".format (K)+"+"+"\n"
     Fit_Expression += "{:.3E}".format (Z[Polynomial_Deg])
-    e_Total[Polynomial_Deg+1][Nd] = Z[Polynomial_Deg]
+    Fit_Expression += "\n"+"(x=ln(dm))"
+    Fitting_Coefficients[Input_Dimension_Row][Polynomial_Deg] = Z[Polynomial_Deg]
 
     # Total Penetration Graph
     plt.figure (Input_Dimension_Row)
@@ -462,10 +469,15 @@ if __name__ == "__main__":
             ws_total.write (Section, i, General_Input[Section][i])
         for i in range (1, Computed_data_Column):
             ws_total.write (Section, i+Input_Dimension_Col, Input_V1[Section][i])
-        for i in range (Nd+1):
+        for i in range (Nd):
             if Section == 0:
-                if i < Nd:
-                    ws_total.write (0, i+Shift, diam[i])
+                ws_total.write (0, i+Shift, diam[i])
             ws_total.write (Section+1, i+Shift, e_Total[Section+1][i])
+        for I in range (0, Polynomial_Deg+1):
+            J = Nd+Shift
+            if I==0:
+                ws_total.write (I, J, "Fitting Coefficients")
+            ws_total.write (I+1, J, Fitting_Coefficients[Input_Dimension_Row][I])
+
 
     Main_Excel_WorkBook.close ()

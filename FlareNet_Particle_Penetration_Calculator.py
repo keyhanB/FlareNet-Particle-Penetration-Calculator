@@ -1,6 +1,6 @@
 # Programmed by Keyhan Babaee Under Prof. Steven Rogak supervision, https://github.com/KeyhanB
-# Version 0.2
-# July 2018
+# Version 1.1
+# Aug 6, 2018
 import Functions as KN
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     Particle_thermal_conduction = 0.2  # w/m/k
     eff_k = 0.1074  # effective density variable for the result to be in kg/m^3
     eff_dm = 2.46  # effective density variable for the result to be in kg/m^3
-    Computed_data_Column = 19+1  # Number of variables of data for each section needed to be calculated (change if you want to add more variables)
+    Computed_data_Column = 20+1  # Number of variables of data for each section needed to be calculated (change if you want to add more variables)
     Number_Particle_Var = 22+1  # Number of variables of data for each particle diameter needed to be calculated (change if you want to add more variables)
     Y_limit_lower = 0.5  # Graph limit _ Y axis
     Y_limit_upper = 1.05  # Graph limit _ Y axis
@@ -90,6 +90,7 @@ if __name__ == "__main__":
             Input_V1[i][17] = "Inner Diameter (Second) (meter)"
             Input_V1[i][18] = "Half Theta (Second) (Rad)"
             Input_V1[i][19] = "Tube Area (Second) (m^2)"
+            Input_V1[i][20] = "Probe Theta (Rad)"
 
             i = i+1
         Input_V1[i][0] = General_Input[i][4]
@@ -112,6 +113,7 @@ if __name__ == "__main__":
         Input_V1[i][17] = KN.Inch_to_Meter (General_Input[i][16])  # ID (Second) (meter)
         Input_V1[i][18] = KN.Deg_to_Radian (General_Input[i][17])  # Half_Theta (Second) (Rad)
         Input_V1[i][19] = KN.Area_with_Diameter (Input_V1[i][17])  # Area (Second) (m^2)
+        Input_V1[i][20] = KN.Deg_to_Radian (General_Input[i][20])  # Probe Theta (Rad)
 
     diam = []  # diameters of particle in meter
     Diameter_Nano = []  # diameters of particle in nm
@@ -201,16 +203,22 @@ if __name__ == "__main__":
             else:
                 Particle_Variables[i+1][19] = 1
 
-            # INLET ASPIRATION penetration
+            # Check if this section is probe or not
             if General_Input[Section][18] == "Y":
-                Particle_Variables[i+1][20] = KN.Aspiration_Eff (Stk=Particle_Variables[i+1][13], U0=General_Input[Section][19], U=Input_V1[Section][7])
+                Particle_Variables[i+1][7] = 1
+                Particle_Variables[i+1][11] = 1
+                Particle_Variables[i+1][15] = 1
+                Particle_Variables[i+1][17] = 1
+                Particle_Variables[i+1][18] = 1
+                Particle_Variables[i+1][19] = 1
+                # INLET ASPIRATION penetration
+                Particle_Variables[i+1][20] = KN.Aspiration_Eff (Stk=Particle_Variables[i+1][13], U0=General_Input[Section][19], U=Input_V1[Section][7], theta_Rad=Input_V1[Section][20])
+                # INLET Transportation penetration
+                Particle_Variables[i+1][21] = KN.InletTrans_Eff (Stk=Particle_Variables[i+1][13], U0=General_Input[Section][19], U=Input_V1[Section][7], theta_Rad=Input_V1[Section][20], Zg=Particle_Variables[i+1][10], Re=Input_V1[Section][12])
             else:
                 Particle_Variables[i+1][20] = 1
-            # INLET Transportation penetration
-            if General_Input[Section][18] == "Y":
-                Particle_Variables[i+1][21] = KN.InletTrans_Eff (Stk=Particle_Variables[i+1][13], U0=General_Input[Section][19], U=Input_V1[Section][7])
-            else:
                 Particle_Variables[i+1][21] = 1
+
             # Overall penetration
             Particle_Variables[i+1][22] = Particle_Variables[i+1][21] * Particle_Variables[i+1][20] * Particle_Variables[i+1][19] * Particle_Variables[i+1][18] * Particle_Variables[i+1][17] * Particle_Variables[i+1][15] * Particle_Variables[i+1][
                 11] * Particle_Variables[i+1][7]
@@ -244,7 +252,7 @@ if __name__ == "__main__":
         Fit_Expression = ""
         for Deg in range (Polynomial_Deg):
             K = Polynomial_Deg-Deg
-            Fitting_Coefficients[Section][Deg]= Z[Deg]
+            Fitting_Coefficients[Section][Deg] = Z[Deg]
             Fit_Expression += "{:.3E}".format (Z[Deg])+" ."+"("+"ln (dm)"+")"+"$^{}$".format (K)+"+"+"\n"
         Fit_Expression += "{:.3E}".format (Z[Polynomial_Deg])
         Fit_Expression += "\n"+"(dm in meter)"
@@ -260,7 +268,7 @@ if __name__ == "__main__":
                 P_Var.write (I, J, Particle_Variables[I][J])
         for I in range (0, Polynomial_Deg+1):
             J = Number_Particle_Var
-            if I==0:
+            if I == 0:
                 P_Var.write (I, J, "Fitting Coefficients")
             P_Var.write (I+1, J, Fitting_Coefficients[Section][I])
         workbook2.close ()
@@ -475,9 +483,8 @@ if __name__ == "__main__":
             ws_total.write (Section+1, i+Shift, e_Total[Section+1][i])
         for I in range (0, Polynomial_Deg+1):
             J = Nd+Shift
-            if I==0:
+            if I == 0:
                 ws_total.write (I, J, "Fitting Coefficients")
             ws_total.write (I+1, J, Fitting_Coefficients[Input_Dimension_Row][I])
-
 
     Main_Excel_WorkBook.close ()

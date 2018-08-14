@@ -4,6 +4,7 @@ from math import asin
 from math import log
 from math import cos
 from math import sin
+from math import fabs
 
 
 def Area_with_Diameter (A):
@@ -166,11 +167,11 @@ def Quality_Of_Sett_Eff (V_ts, theta, U):
 
 
 def Settling_Eff (Zg, Re, Re_t, theta):
-    if Re < Re_t:  # laminar flow expression from Brockman
+    if Re < Re_t:  # laminar flow expression Heyder and Gebhart (1977)
         ep = 0.75 * Zg * cos (theta)
         B = (1-(ep ** (2 / 3))) ** 0.5
         eta = 1-(2 / pi) * ((2 * ep * B)-((ep ** (1 / 3)) * B)+(asin (ep ** (1 / 3))))
-    else:
+    else:  # Turbulent flow expression Schwendiman et al. 1975
         eta = exp (-4 * Zg * cos (theta) / pi)
     return eta
 
@@ -186,12 +187,12 @@ def Vt_Turb_Depos (Stk, Re, U):
 
 
 def Diffusion_Eff (zeta, Sch, Re, Re_t):
-    if Re < Re_t:  # laminar flow expression from Brockman
+    if Re < Re_t:  # laminar flow expression from Holman (1972)
         Sh = 3.66+(0.2672 / (zeta+0.10079 * zeta ** (1 / 3)))  # Sherwood Number
         eta = exp (-1 * zeta * Sh)
-    else:
+    else:  # Turbulent flow expression Friedlander (1977)
         Sh = 0.0118 * Re ** (7 / 8) * Sch ** (1 / 3)  # Sherwood Number
-        eta = exp (-1 * Sh * zeta)
+        eta = exp (-1 * zeta * Sh)
     return eta
 
 
@@ -206,7 +207,7 @@ def Inertial_Turb_Depos_Eff (d_tube, Length, Vt_Turb, Q, Re, Re_t):
 
 
 def Inertial_Bend_Depos_Eff (Stk, Bend_Rad, Re, Re_t):
-    if Re < Re_t:
+    if Re < Re_t: # check angle is in Rad or Deg ??? (two contradictory sources)
         A = (1+(Stk / 0.171) ** (0.452 * (Stk / 0.171)+2.242)) ** (-2 * (Bend_Rad * 180 / pi) / pi)
     else:
         A = exp (-2.823 * Stk * (Bend_Rad * 180 / pi))
@@ -214,8 +215,8 @@ def Inertial_Bend_Depos_Eff (Stk, Bend_Rad, Re, Re_t):
 
 
 def Inertial_Deposit_Contraction_Eff (Stk, Theta_Rad, A_o, A_i):
-    # Validity: 0.001≤Stk(1−Ao/Ai)≤100 and 12≤θcont≤90
-    A = 1-(1 / (1+((Stk * (1-(A_o / A_i))) / (3.14 * exp (-0.0185 * (Theta_Rad * 180 / pi)))) ** (-1.24)))
+    # Validity: 0.001≤Stk(1−Ao/Ai)≤100 and 12≤θcont≤90,  Muyshondt et al. (1996)
+    A = 1-(1 / (1+((2*Stk * (1-(A_o / A_i))) / (3.14 * exp (-0.0185 * (Theta_Rad * 180 / pi)))) ** (-1.24)))
     return A
 
 
@@ -224,24 +225,58 @@ def Stokes (V_ts, U, Length):
     return A
 
 
-def Aspiration_Eff (Stk, U0, U):
-    # Belyaev and Levin function should have 0.17<U0/U< 5.6, 0.05≤Stk0≤2.03
-    k = 2+(0.617 * (U / U0))
+def Aspiration_Eff (Stk, U0, U, theta_Rad):
+    # Liu, Zhang, and Kuehn (1989) correlation for isoaxial aspiration efficiency for 0.01 < Stk< 100 and 0.1 < U0/U < 10.
+    theta = theta_Rad * 180 / pi
     Stk0 = (U0 / U) * Stk  # in correlation, Stokes is based on ambient velocity
-    eta_asp = 1+((U0 / U)-1) * (1-(1 / (1+k * Stk0)))
-    if eta_asp > 1:
-        eta_asp = 1
+    eta_asp = 1
+
+    if theta == 0:  # isoaxial
+        if (U0 / U) >= 1:  # sub-isokinetic sampling
+            eta_asp = 1+(((U0 / U)-1) / (1+(0.418 / Stk0)))
+        else:  # super-isokinetic sampling
+            eta_asp = 1+(((U0 / U)-1) / (1+(0.506 * ((U0 / U) ** 0.5) / Stk0)))
+
+    # Anisoaxial
+    elif fabs (theta) <= 60:  # 0.02 < Stk <4 and 0.5 < U0/U < 2
+        Stk0_prime = Stk0 * exp (0.022 * fabs (theta))  # Durham and Lundgren (1980)
+        k = 2+(0.617 * (U / U0))
+        eta_asp = 1+(((U0 / U) * cos (theta_Rad))-1) * ((1-((1+k * Stk0_prime) ** (-1))) / (1-((1+2.617 * Stk0_prime) ** (-1)))) * (1-((1+0.55 * Stk0_prime * exp (0.25 * Stk0_prime)) ** (-1)))
+
+    elif fabs (theta) <= 90:  # 0.02 <Stk < 0.2 and 0.5 < U0/U < 2
+        eta_asp = 1+(((U0 / U) * cos (theta_Rad))-1) * (3 * Stk0 ** ((U / U0) ** 0.5))
     return eta_asp
 
 
-def InletTrans_Eff (Stk, U0, U):
-    # Liu et al 1989  1≤U0/U≤10 and 0.01≤Stk0≤100.
-    if U0 < U:
-        eta = 1
-    else:
-        Stk0 = (U0 / U) * Stk  # in correlation, Stokes is based on ambient velocity
-        r = (U0 / U)-1
-        eta = (1+r / (1+2.66 / (Stk0 ** (-2 / 3)))) / (1+r / (1+(.418 / Stk0)))
-    if eta > 1:
-        eta = 1
+def InletTrans_Eff (Stk, U0, U, theta_Rad, Zg, Re):
+    eta_inert = 1
+    theta = theta_Rad * 180 / pi
+    Stk0 = (U0 / U) * Stk  # in correlation, Stokes is based on ambient velocity
+
+    # transmission efficiency for gravitational settling , Hangal and Willeke (1990b)
+    K_theta = (Zg ** 0.5) * (Stk0 ** 0.5) * (Re ** (-0.25)) * cos (theta_Rad)
+    eta_grav = exp (-4.7 * (K_theta ** (0.75)))
+
+    # Hangal and Willeke (1990b) give the transmission efficiency for inertia
+    if theta == 0:  # isoaxial
+        if U0 >= U:  # sub-isokinetic sampling , 0.01 < Stk < 100 and 1 < U0/U < 10
+            r = (U0 / U)-1
+            eta_inert = (1+r / (1+2.66 * (Stk0 ** (-2 / 3)))) / (1+r / (1+(0.418 / Stk0)))
+        elif U0 < U:  # super-isokinetic sampling ,0.02 < Stk < 4 and 0.25 < U0/U < 1.0
+            IV = 0.09 * (Stk0 * (U-U0) / U0) ** 0.3
+            eta_inert = exp (-75 * (IV ** 2))
+
+    else:  # Anisoaxial
+        if U0 <= U:
+            IV = 0.09 * (Stk0 * cos (theta_Rad) * (U-U0) / U0) ** 0.3
+        else:
+            IV = 0
+        alpha = 12 * ((1-(fabs (theta) / 90))-exp (-1 * fabs (theta)))
+        if theta < 0:  # downward sampling
+            IW = Stk0 * ((U0 / U) ** 0.5) * sin ((theta-alpha) * pi / 180) * sin (((theta-alpha) / 2) * pi / 180)
+        if theta > 0:  # upward sampling
+            IW = Stk0 * ((U0 / U) ** 0.5) * sin ((theta+alpha) * pi / 180) * sin (((theta+alpha) / 2) * pi / 180)
+        eta_inert = exp (-75 * (IV+IW) ** 2)
+
+    eta = eta_grav * eta_inert
     return eta

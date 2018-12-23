@@ -98,7 +98,7 @@ if __name__ == "__main__":
             Flow_Properties[i][18] = "Half Theta (Second) (Rad)"
             Flow_Properties[i][19] = "Tube Cross Section (Second) (m^2)"
             Flow_Properties[i][20] = "Probe Theta (Rad)"
-            Flow_Properties[i][21] = "Wall Overall Heat Coefficient W/(m^2.K)"
+            Flow_Properties[i][21] = "Wall Overall Heat Coefficient (W/(m^2.K))"
             Flow_Properties[i][22] = "Tube Surface Area(m^2)"
             Flow_Properties[i][23] = "Heat loss (W)"
             Flow_Properties[i][24] = "Calculated Outlet Temperature (K)"
@@ -143,17 +143,19 @@ if __name__ == "__main__":
         Flow_Properties[i][18] = KN.Deg_to_Radian(General_Input[i][17])  # Half_Theta (Second) (Rad)
         Flow_Properties[i][19] = KN.Area_with_Diameter(Flow_Properties[i][17])  # Area (Second) (m^2)
         Flow_Properties[i][20] = KN.Deg_to_Radian(General_Input[i][20])  # Probe Theta (Rad)
-        Flow_Properties[i][21] = KN.Overall_Heat_Coefficient(Re=Flow_Properties[i][12], RSI=General_Input[i][22], ReT=Reynolds_Lam_to_Turb, Pr=Flow_Properties[i][15], k=Flow_Properties[i][14], D=Flow_Properties[i][1], L=Flow_Properties[i][2])
-        Flow_Properties[i][22] = KN.Tube_Surface_Area(L=Flow_Properties[i][2], D=Flow_Properties[i][1])
-        Flow_Properties[i][23] = KN.Heat_Loss(U=Flow_Properties[i][21], A=Flow_Properties[i][22], T_Air_Duct=General_Input[i][11], T_ambient=General_Input[i][21])
-        Flow_Properties[i][24] = KN.Outlet_Temperature(Q_Watt=Flow_Properties[i][23], Rho_Gas=Flow_Properties[i][10], Volumetric_Flow=Flow_Properties[i][6], Specific_Heat=Flow_Properties[i][13], T_Air_Inlet=General_Input[i][11])
-        Flow_Properties[i][25] = KN.Wall_Temperature_Calc(RSI=General_Input[i][22], A=Flow_Properties[i][22], Q_Watt=Flow_Properties[i][23], T_ambient=General_Input[i][21])
+        Flow_Properties[i][21] = KN.Overall_Heat_Coefficient(Re=Flow_Properties[i][12], RSI=General_Input[i][22], ReT=Reynolds_Lam_to_Turb, Pr=Flow_Properties[i][15], k=Flow_Properties[i][14], D=Flow_Properties[i][1],
+                                                             L=Flow_Properties[i][2])  # W/(m^2.K)
+        Flow_Properties[i][22] = KN.Tube_Surface_Area(L=Flow_Properties[i][2], D=Flow_Properties[i][1])  # Area (m^2)
+        Flow_Properties[i][23] = KN.Heat_Loss(U=Flow_Properties[i][21], A=Flow_Properties[i][22], T_Air_Duct=General_Input[i][11], T_ambient=General_Input[i][21])  # watt
+        Flow_Properties[i][24] = KN.Outlet_Temperature(Q_Watt=Flow_Properties[i][23], Rho_Gas=Flow_Properties[i][10], Volumetric_Flow=Flow_Properties[i][6], Specific_Heat=Flow_Properties[i][13], T_Air_Inlet=General_Input[i][11])  # Kelvin
+        Flow_Properties[i][25] = KN.Wall_Temperature_Calc(RSI=General_Input[i][22], A=Flow_Properties[i][22], Q_Watt=Flow_Properties[i][23], T_ambient=General_Input[i][21])  # Kelvin
 
         ####### Checking if user provided wall and oulet temperature
         if General_Input[i][10] == -1:  # T_Wall_Calculator
             General_Input[i][10] = Flow_Properties[i][25]
         if General_Input[i][12] == -1:  # T_Outlet_Calculator
             General_Input[i][12] = Flow_Properties[i][24]
+        # TODO look for the better temperature calculator acroos the length of the pipe
         if General_Input[i][12] <= General_Input[i][21]:  # T_Ambient_Calculator
             General_Input[i][12] = General_Input[i][21]
         ####################

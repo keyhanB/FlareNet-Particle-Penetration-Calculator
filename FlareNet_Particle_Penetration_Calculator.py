@@ -72,7 +72,7 @@ if __name__ == "__main__":
     Total_Enable = 1  # Total penetration plotting (0 for not plotting)
     Fit_Enable = 1  # Fitted polynomial plotting (0 for not plotting)
     #######################################################
-
+    logging.info("FPPC Initiated")
     Flow_Properties = [[None for i in range(Computed_data_Column)] for j in range(Input_Dimension_Row)]
 
     for i in range(1, Input_Dimension_Row):
@@ -155,11 +155,13 @@ if __name__ == "__main__":
             General_Input[i][10] = Flow_Properties[i][25]
         if General_Input[i][12] == -1:  # T_Outlet_Calculator
             General_Input[i][12] = Flow_Properties[i][24]
-        # TODO look for the better temperature calculator acroos the length of the pipe
+        # TODO look for the better temperature calculator across the length of the pipe
         if General_Input[i][12] <= General_Input[i][21]:  # T_Ambient_Calculator
             General_Input[i][12] = General_Input[i][21]
         ####################
+        logging.info("Reading and Calculating Variables for sections was successful {0}", Input_Dimension_Row - 1)
 
+    #######  Efficiencies: Rows are for each section and columns are for each particle diameter
     eta_Diff = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Diffusion penetration
     eta_Grav = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Gravitational penetration
     eta_Inert = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Turbulent inertial penetration
@@ -169,6 +171,7 @@ if __name__ == "__main__":
     eta_Asp = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Aspiration penetration
     eta_Inlet = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Inlet transportation penetration
     e_Total = [[1 for i in range(Nd + 1)] for j in range(Input_Dimension_Row + 1)]  # Total penetration
+    # +1 for the fitting variables
 
     los_Diff = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Diffusion Loss
     los_Grav = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Gravitational Loss
@@ -180,8 +183,8 @@ if __name__ == "__main__":
     los_Inlet = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Inlet transportation Loss
     los_Total = [[1 for i in range(Nd + 1)] for j in range(Input_Dimension_Row + 1)]  # Total Loss
 
-    los_Norm_Sum = [1 for i in range(Nd)]
-    los_Norm_Sum1 = [1 for i in range(Nd)]
+    los_Norm_Sum = [1 for i in range(Nd)]  # TODO check for better names
+    los_Norm_Sum1 = [1 for i in range(Nd)]  # TODO check for better names
     los_Diff_Norm = [1 for i in range(Nd)]  # Normalized Diffusion Loss
     los_Grav_Norm = [1 for i in range(Nd)]  # Normalized Gravitational Loss
     los_Inert_Norm = [1 for i in range(Nd)]  # Normalized Turbulent inertial Loss
@@ -193,8 +196,9 @@ if __name__ == "__main__":
     los_Total_Norm = [1 for i in range(Nd)]  # Normalized Total Loss
 
     Fitting_Coefficients = [[1 for i in range(Polynomial_Deg + 1)] for j in range(Input_Dimension_Row + 1)]  # Fitting line Coefficients for total penetration
-    Particle_Variables = [[None for i in range(Number_Particle_Var)] for j in range(Nd + 1)]
 
+    ######################
+    Particle_Variables = [[None for i in range(Number_Particle_Var)] for j in range(Nd + 1)]
     ######################
     D_ratio = (D_large / D_small) ** (1 / (Nd - 1))
     diam = []  # diameters of particle in meter

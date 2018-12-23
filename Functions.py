@@ -187,8 +187,8 @@ def Thermophoresis_Eff(Kth, Re, Pr, Re_t, T_wall, T_entrance, T_Exit, k, Cp, Q, 
 
         if Re < Re_t:  # laminar
             A = (T_Exit / T_entrance) ** (Pr * Kth)
-            # Jyh-Shyan Lin, Chuen-Jinn Tsai, 2003, Thermophoretic deposition efficiency in a cylindrical tube taking into account developing flow at the entrance region
-            # A = 1 - 0.783 * (Pr * Kth * (T_entrance - T_wall) / T_wall) ** (0.94)
+        # Jyh-Shyan Lin, Chuen-Jinn Tsai, 2003, Thermophoretic deposition efficiency in a cylindrical tube taking into account developing flow at the entrance region
+        # A = 1 - 0.783 * (Pr * Kth * (T_entrance - T_wall) / T_wall) ** (0.94)
         # A = 1-0.549 * (Pr * Kth * (T_entrance-T_wall) / T_wall) ** (0.48)
         # Stratmann et al. (1994)
         # A= exp(-0.845*((Pr*Kth+0.025)/((T_wall/(T_entrance-T_wall))+0.28))**0.932)

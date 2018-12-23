@@ -111,14 +111,14 @@ if __name__ == "__main__":
             if General_Input[i - 1][12] != -1:
                 General_Input[i][11] = General_Input[i - 1][12]
             else:
-                logging.info("Invalid Temperature for the section number {0}", i)
+                logging.info(f"Invalid Temperature for the section number {i}")
                 raise Exception("Invalid Temperature for calculation")
 
         if General_Input[i][9] == -1:  # T_Gas_Calculator
             if General_Input[i - 1][12] != -1:
                 General_Input[i][9] = General_Input[i - 1][12]
             else:
-                logging.info("Invalid Temperature for the section number {0}", i)
+                logging.info(f"Invalid Temperature for the section number {i}")
                 raise Exception("Invalid Temperature for calculation")
         ####################
 
@@ -159,8 +159,8 @@ if __name__ == "__main__":
         if General_Input[i][12] <= General_Input[i][21]:  # T_Ambient_Calculator
             General_Input[i][12] = General_Input[i][21]
         ####################
-        logging.info("Reading and Calculating Variables for sections was successful {0}", Input_Dimension_Row - 1)
 
+    logging.info(f"Reading and Calculating Variables for sections was successful {Input_Dimension_Row - 1}")
     #######  Efficiencies: Rows are for each section and columns are for each particle diameter
     eta_Diff = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Diffusion penetration
     eta_Grav = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Gravitational penetration
@@ -308,12 +308,11 @@ if __name__ == "__main__":
 
             # Overall penetration
             Particle_Variables[i + 1][22] = Particle_Variables[i + 1][21] * Particle_Variables[i + 1][20] * Particle_Variables[i + 1][19] * Particle_Variables[i + 1][18] * Particle_Variables[i + 1][17] * Particle_Variables[i + 1][15] * \
-                                            Particle_Variables[i + 1][
-                                                11] * Particle_Variables[i + 1][7]
+                                            Particle_Variables[i + 1][11] * Particle_Variables[i + 1][7]
 
         # Saving Efficiencies
         for I in range(Nd):
-            if Flow_Properties[Section][0] != 0:
+            if Flow_Properties[Section][0] != 0:  # ignoring section
                 eta_Diff[Section][I] = Flow_Properties[Section][0]
                 eta_Grav[Section][I] = Flow_Properties[Section][0]
                 eta_Inert[Section][I] = Flow_Properties[Section][0]
@@ -333,6 +332,7 @@ if __name__ == "__main__":
                 eta_Asp[Section][I] = Particle_Variables[I + 1][20]
                 eta_Inlet[Section][I] = Particle_Variables[I + 1][21]
                 e_Total[Section][I] = Particle_Variables[I + 1][22]
+        logging.info(f"Calculating Particle variables were successful: S {Section}")
         ##########################################################################
         # Fitting polynomial on the total penetration for each section
         Z = np.polyfit(Ln_Diam1, e_Total[Section][0:Nd], Polynomial_Deg)
@@ -414,7 +414,7 @@ if __name__ == "__main__":
             eta_Asp[Input_Dimension_Row][i] = eta_Asp[Section][i] * eta_Asp[Input_Dimension_Row][i]
             eta_Inlet[Input_Dimension_Row][i] = eta_Inlet[Section][i] * eta_Inlet[Input_Dimension_Row][i]
             e_Total[Input_Dimension_Row][i] = e_Total[Section][i] * e_Total[Input_Dimension_Row][i]
-
+    logging.info(f"Total Penetration calculated!")
     ##########################################################################
     # Fitting polynomial on the total penetration
     Z = np.polyfit(Ln_Diam1, e_Total[Input_Dimension_Row][0:Nd], Polynomial_Deg)
@@ -461,8 +461,6 @@ if __name__ == "__main__":
         los_Cont_Norm[i] = los_Cont[Input_Dimension_Row][i] / (los_Norm_Sum[i] / los_Total[Input_Dimension_Row][i])
         los_Asp_Norm[i] = los_Asp[Input_Dimension_Row][i] / (los_Norm_Sum[i] / los_Total[Input_Dimension_Row][i])
         los_Inlet_Norm[i] = los_Inlet[Input_Dimension_Row][i] / (los_Norm_Sum[i] / los_Total[Input_Dimension_Row][i])
-        # los_Norm_Sum1[i] = los_Diff_Norm[i]+los_Grav_Norm[i]+los_Inert_Norm[i]+los_TP_Norm[i]+los_Bend_Norm[i]+los_Cont_Norm[i]+los_Asp_Norm[i]+los_Inlet_Norm[i]
-        # los_Total_Norm[i] = los_Norm_Sum[i] / (los_Norm_Sum[i] / los_Total[Input_Dimension_Row][i])
 
     ##########################################################################
     # Total Penetration Graph
@@ -515,9 +513,6 @@ if __name__ == "__main__":
     Gender = ['Diffusion', 'Gravitational', 'Inertial', 'Thermophoresis', 'Bend', 'Contraction', 'Aspiration', 'Probe Inlet']
     # colors
     d_colors = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71", "#ffbf00", "#000000"]
-    # palette = sns.color_palette ("Set3", 8)
-    # d_colors = palette.as_hex ()
-
     fig = plt.figure()
     ax = fig.add_subplot(111)
     SBG.stackedBarPlot(ax, Total_Losses, d_colors, xLabels=D_labels, widths=Width_nm)

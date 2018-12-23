@@ -9,10 +9,14 @@ import xlrd
 import xlsxwriter
 from math import log
 from stackedBarGraph import StackedBarGrapher
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', filename='Log.txt', level=logging.INFO, filemode='w')
 
 # Important Note: all pressures are in Pascal and all temperatures are in Kelvin
 
 if __name__ == "__main__":
+
     # Script Directory
     script_dir = os.path.dirname(os.path.realpath('__file__'))
 
@@ -25,6 +29,7 @@ if __name__ == "__main__":
         os.makedirs(Excel_Directory)
     if not os.path.exists(Graph_Directory):
         os.makedirs(Graph_Directory)
+
     Input_Data_Excel = "Excel Input/Input.xlsx"
     Input_Data_Excel = os.path.join(script_dir, Input_Data_Excel)
     Output_Data_Excel = "Main Report.xlsx"
@@ -66,79 +71,92 @@ if __name__ == "__main__":
     Inlet_Enable = 1  # Inlet transportation penetration plotting (0 for not plotting)
     Total_Enable = 1  # Total penetration plotting (0 for not plotting)
     Fit_Enable = 1  # Fitted polynomial plotting (0 for not plotting)
-
     #######################################################
 
-    Input_V1 = [[None for i in range(Computed_data_Column)] for j in range(Input_Dimension_Row)]
+    Flow_Properties = [[None for i in range(Computed_data_Column)] for j in range(Input_Dimension_Row)]
+
     for i in range(1, Input_Dimension_Row):
         if i == 1:
             i = i - 1
-            Input_V1[i][1] = "Inner Diameter(meter)"
-            Input_V1[i][2] = "Length(meter)"
-            Input_V1[i][3] = "Bend Angle(Rad)"
-            Input_V1[i][4] = "Theta Angle(Rad)"
-            Input_V1[i][5] = "Actual Flow rate(lpm)"
-            Input_V1[i][6] = "Actual Flow rate(m3/s)"
-            Input_V1[i][7] = "Flow velocity rate(m/s)"
-            Input_V1[i][8] = "Dynamic Viscosity(kg/m/s)"
-            Input_V1[i][9] = "Mean free path(meter)"
-            Input_V1[i][10] = "Density(kg/m^3)"
-            Input_V1[i][11] = "Kinematic Viscosity(m^2/s)"
-            Input_V1[i][12] = "Reynolds"
-            Input_V1[i][13] = "Specific heat(J/kg/K)"
-            Input_V1[i][14] = "Thermal Conductivity(W/m/K)"
-            Input_V1[i][15] = "Prandtl"
-            Input_V1[i][16] = "Tube Area(m^2)"
-            Input_V1[i][17] = "Inner Diameter (Second) (meter)"
-            Input_V1[i][18] = "Half Theta (Second) (Rad)"
-            Input_V1[i][19] = "Tube Area (Second) (m^2)"
-            Input_V1[i][20] = "Probe Theta (Rad)"
-            Input_V1[i][21] = "Total Wall Heat Resistance"
-            Input_V1[i][22] = "Tube Surface Area(m^2)"
-            Input_V1[i][23] = "Heat loss(W)"
-            Input_V1[i][24] = "Calculated Outlet Temperature K)"
-            Input_V1[i][25] = "Calculated Wall Temperature (K)"
+            Flow_Properties[i][1] = "Inner Diameter (meter)"
+            Flow_Properties[i][2] = "Length (meter)"
+            Flow_Properties[i][3] = "Bend Angle (Rad)"
+            Flow_Properties[i][4] = "Theta Angle (Rad)"
+            Flow_Properties[i][5] = "Actual Flow rate (lpm)"
+            Flow_Properties[i][6] = "Actual Flow rate (m3/s)"
+            Flow_Properties[i][7] = "Flow velocity rate (m/s)"
+            Flow_Properties[i][8] = "Dynamic Viscosity (kg/m/s)"
+            Flow_Properties[i][9] = "Mean free path (meter)"
+            Flow_Properties[i][10] = "Density (kg/m^3)"
+            Flow_Properties[i][11] = "Kinematic Viscosity (m^2/s)"
+            Flow_Properties[i][12] = "Reynolds"
+            Flow_Properties[i][13] = "Specific heat (J/kg/K)"
+            Flow_Properties[i][14] = "Thermal Conductivity (W/m/K)"
+            Flow_Properties[i][15] = "Prandtl"
+            Flow_Properties[i][16] = "Tube Cross Section (m^2)"
+            Flow_Properties[i][17] = "Inner Diameter (Second) (meter)"
+            Flow_Properties[i][18] = "Half Theta (Second) (Rad)"
+            Flow_Properties[i][19] = "Tube Cross Section (Second) (m^2)"
+            Flow_Properties[i][20] = "Probe Theta (Rad)"
+            Flow_Properties[i][21] = "Wall Overall Heat Coefficient W/(m^2.K)"
+            Flow_Properties[i][22] = "Tube Surface Area(m^2)"
+            Flow_Properties[i][23] = "Heat loss (W)"
+            Flow_Properties[i][24] = "Calculated Outlet Temperature (K)"
+            Flow_Properties[i][25] = "Calculated Wall Temperature (K)"
 
             i = i + 1
+
+        ####### Checking if user provided Inlet and gas temperature if not using outlet temperature of the last section
         if General_Input[i][11] == -1:  # T_Inlet_Calculator
-            General_Input[i][11] = General_Input[i - 1][12]
+            if General_Input[i - 1][12] != -1:
+                General_Input[i][11] = General_Input[i - 1][12]
+            else:
+                logging.info("Invalid Temperature for the section number {0}", i)
+                raise Exception("Invalid Temperature for calculation")
 
         if General_Input[i][9] == -1:  # T_Gas_Calculator
-            General_Input[i][9] = General_Input[i - 1][12]
+            if General_Input[i - 1][12] != -1:
+                General_Input[i][9] = General_Input[i - 1][12]
+            else:
+                logging.info("Invalid Temperature for the section number {0}", i)
+                raise Exception("Invalid Temperature for calculation")
+        ####################
 
-        Input_V1[i][0] = General_Input[i][4]
-        Input_V1[i][1] = KN.Inch_to_Meter(General_Input[i][5])  # ID (meter)
-        Input_V1[i][2] = KN.Inch_to_Meter(General_Input[i][6])  # length (meter)
-        Input_V1[i][3] = KN.Deg_to_Radian(General_Input[i][7])  # Bend (Rad)
-        Input_V1[i][4] = KN.Deg_to_Radian(General_Input[i][8])  # Theta (Rad)
-        Input_V1[i][5] = KN.ActualFlowRateLPM(Q_Slpm=General_Input[i][14], Pg_pa=General_Input[i][13], T_0=T_0, P_0_pa=P_0, Tg_K=General_Input[i][9])  # Actual flow rate (lpm)
-        Input_V1[i][6] = KN.LPM_to_M3perSec(Input_V1[i][5])  # Actual flow rate (m^3/s)
-        Input_V1[i][7] = KN.Flow_Velocity(Flowrate=Input_V1[i][6], Area=KN.Area_with_Diameter(Input_V1[i][1]))  # flow velocity derived from Actual flow rate (m/s)
-        Input_V1[i][8] = KN.visc(T=General_Input[i][9], P=General_Input[i][13])  # dynamic Viscosity (kg/m/s)
-        Input_V1[i][9] = KN.mfp(visc=Input_V1[i][8], T=General_Input[i][9], P=General_Input[i][13])  # mean free path (meter)
-        Input_V1[i][10] = KN.rho(T=General_Input[i][9], P=General_Input[i][13])  # Density (kg/m^3)
-        Input_V1[i][11] = KN.KinViscosity(visc=Input_V1[i][8], rho=Input_V1[i][10])  # Kinematic Viscosity (m2/s)
-        Input_V1[i][12] = KN.Reynolds(rho=Input_V1[i][10], Velocity=Input_V1[i][7], Diameter=Input_V1[i][1], visc=Input_V1[i][8])  # Reynolds
-        Input_V1[i][13] = KN.SpecificHeat(General_Input[i][9])  # Specific heat (J/kg/K)
-        Input_V1[i][14] = KN.ThermalCond(General_Input[i][9])  # Thermal Conductivity (W/m/K)
-        Input_V1[i][15] = KN.Prandtl(C=Input_V1[i][13], visc=Input_V1[i][8], K=Input_V1[i][14])  # Prandtl
-        Input_V1[i][16] = KN.Area_with_Diameter(Input_V1[i][1])  # Area (m^2)
-        Input_V1[i][17] = KN.Inch_to_Meter(General_Input[i][16])  # ID (Second) (meter)
-        Input_V1[i][18] = KN.Deg_to_Radian(General_Input[i][17])  # Half_Theta (Second) (Rad)
-        Input_V1[i][19] = KN.Area_with_Diameter(Input_V1[i][17])  # Area (Second) (m^2)
-        Input_V1[i][20] = KN.Deg_to_Radian(General_Input[i][20])  # Probe Theta (Rad)
-        Input_V1[i][21] = KN.Overall_Heat_Coefficient(Re=Input_V1[i][12], RSI=General_Input[i][22], ReT=Reynolds_Lam_to_Turb, Pr=Input_V1[i][15], k=Input_V1[i][14], D=Input_V1[i][1], L=Input_V1[i][2])
-        Input_V1[i][22] = KN.Tube_Surface_Area(L=Input_V1[i][2], D=Input_V1[i][1])
-        Input_V1[i][23] = KN.Heat_Loss(U=Input_V1[i][21], A=Input_V1[i][22], T_Air_Duct=General_Input[i][11], T_ambient=General_Input[i][21])
-        Input_V1[i][24] = KN.Outlet_Temperature(Q_Watt=Input_V1[i][23], Rho_Gas=Input_V1[i][10], Volumetric_Flow=Input_V1[i][6], Specific_Heat=Input_V1[i][13], T_Air_Inlet=General_Input[i][11])
-        Input_V1[i][25] = KN.Wall_Temperature_Calc(RSI=General_Input[i][22], A=Input_V1[i][22], Q_Watt=Input_V1[i][23], T_ambient=General_Input[i][21])
+        Flow_Properties[i][0] = General_Input[i][4]  # ignore
+        Flow_Properties[i][1] = KN.Inch_to_Meter(General_Input[i][5])  # ID (meter)
+        Flow_Properties[i][2] = KN.Inch_to_Meter(General_Input[i][6])  # length (meter)
+        Flow_Properties[i][3] = KN.Deg_to_Radian(General_Input[i][7])  # Bend (Rad)
+        Flow_Properties[i][4] = KN.Deg_to_Radian(General_Input[i][8])  # Theta (Rad)
+        Flow_Properties[i][5] = KN.ActualFlowRateLPM(Q_Slpm=General_Input[i][14], Pg_pa=General_Input[i][13], T_0=T_0, P_0_pa=P_0, Tg_K=General_Input[i][9])  # Actual flow rate (lpm)
+        Flow_Properties[i][6] = KN.LPM_to_M3perSec(Flow_Properties[i][5])  # Actual flow rate (m^3/s)
+        Flow_Properties[i][7] = KN.Flow_Velocity(Flowrate=Flow_Properties[i][6], Area=KN.Area_with_Diameter(Flow_Properties[i][1]))  # flow velocity derived from Actual flow rate (m/s)
+        Flow_Properties[i][8] = KN.visc(T=General_Input[i][9], P=General_Input[i][13])  # dynamic Viscosity (kg/m/s)
+        Flow_Properties[i][9] = KN.mfp(visc=Flow_Properties[i][8], T=General_Input[i][9], P=General_Input[i][13])  # mean free path (meter)
+        Flow_Properties[i][10] = KN.rho(T=General_Input[i][9], P=General_Input[i][13])  # Density (kg/m^3)
+        Flow_Properties[i][11] = KN.KinViscosity(visc=Flow_Properties[i][8], rho=Flow_Properties[i][10])  # Kinematic Viscosity (m2/s)
+        Flow_Properties[i][12] = KN.Reynolds(rho=Flow_Properties[i][10], Velocity=Flow_Properties[i][7], Diameter=Flow_Properties[i][1], visc=Flow_Properties[i][8])  # Reynolds
+        Flow_Properties[i][13] = KN.SpecificHeat(General_Input[i][9])  # Specific heat (J/kg/K)
+        Flow_Properties[i][14] = KN.ThermalCond(General_Input[i][9])  # Thermal Conductivity (W/m/K)
+        Flow_Properties[i][15] = KN.Prandtl(C=Flow_Properties[i][13], visc=Flow_Properties[i][8], K=Flow_Properties[i][14])  # Prandtl
+        Flow_Properties[i][16] = KN.Area_with_Diameter(Flow_Properties[i][1])  # Area (m^2)
+        Flow_Properties[i][17] = KN.Inch_to_Meter(General_Input[i][16])  # ID (Second) (meter)
+        Flow_Properties[i][18] = KN.Deg_to_Radian(General_Input[i][17])  # Half_Theta (Second) (Rad)
+        Flow_Properties[i][19] = KN.Area_with_Diameter(Flow_Properties[i][17])  # Area (Second) (m^2)
+        Flow_Properties[i][20] = KN.Deg_to_Radian(General_Input[i][20])  # Probe Theta (Rad)
+        Flow_Properties[i][21] = KN.Overall_Heat_Coefficient(Re=Flow_Properties[i][12], RSI=General_Input[i][22], ReT=Reynolds_Lam_to_Turb, Pr=Flow_Properties[i][15], k=Flow_Properties[i][14], D=Flow_Properties[i][1], L=Flow_Properties[i][2])
+        Flow_Properties[i][22] = KN.Tube_Surface_Area(L=Flow_Properties[i][2], D=Flow_Properties[i][1])
+        Flow_Properties[i][23] = KN.Heat_Loss(U=Flow_Properties[i][21], A=Flow_Properties[i][22], T_Air_Duct=General_Input[i][11], T_ambient=General_Input[i][21])
+        Flow_Properties[i][24] = KN.Outlet_Temperature(Q_Watt=Flow_Properties[i][23], Rho_Gas=Flow_Properties[i][10], Volumetric_Flow=Flow_Properties[i][6], Specific_Heat=Flow_Properties[i][13], T_Air_Inlet=General_Input[i][11])
+        Flow_Properties[i][25] = KN.Wall_Temperature_Calc(RSI=General_Input[i][22], A=Flow_Properties[i][22], Q_Watt=Flow_Properties[i][23], T_ambient=General_Input[i][21])
 
+        ####### Checking if user provided wall and oulet temperature
         if General_Input[i][10] == -1:  # T_Wall_Calculator
-            General_Input[i][10] = Input_V1[i][25]
+            General_Input[i][10] = Flow_Properties[i][25]
         if General_Input[i][12] == -1:  # T_Outlet_Calculator
-            General_Input[i][12] = Input_V1[i][24]
-        if Input_V1[i][24] <= General_Input[i][21]:  # T_Ambient_Calculator
+            General_Input[i][12] = Flow_Properties[i][24]
+        if General_Input[i][12] <= General_Input[i][21]:  # T_Ambient_Calculator
             General_Input[i][12] = General_Input[i][21]
+        ####################
 
     eta_Diff = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Diffusion penetration
     eta_Grav = [[1 for i in range(Nd)] for j in range(Input_Dimension_Row + 1)]  # Gravitational penetration
@@ -229,38 +247,39 @@ if __name__ == "__main__":
     for Section in range(1, Input_Dimension_Row):
         for i in range(Nd):
             # Diffusional penetration for laminar and turbulent flow
-            Particle_Variables[i + 1][1] = KN.Kn(mfp=Input_V1[Section][9], dp=diam[i])  # Knudsen number
+            Particle_Variables[i + 1][1] = KN.Kn(mfp=Flow_Properties[Section][9], dp=diam[i])  # Knudsen number
             Particle_Variables[i + 1][2] = KN.Cc(Particle_Variables[i + 1][1])  # Cunningham correction factor
-            Particle_Variables[i + 1][3] = KN.Mobility(dp=diam[i], Cc=Particle_Variables[i + 1][2], visc=Input_V1[Section][8])  # Mobility (s/kg)
+            Particle_Variables[i + 1][3] = KN.Mobility(dp=diam[i], Cc=Particle_Variables[i + 1][2], visc=Flow_Properties[Section][8])  # Mobility (s/kg)
             Particle_Variables[i + 1][4] = KN.Particle_Diff_Coeff(Mobility=Particle_Variables[i + 1][3], T=General_Input[Section][9])  # Particle diffusion coefficient (m2/s)
-            Particle_Variables[i + 1][5] = KN.Zeta(Diffusion=Particle_Variables[i + 1][4], Length=Input_V1[Section][2], Q=Input_V1[Section][6])  # Zeta
-            Particle_Variables[i + 1][6] = KN.Schmidt(visc=Input_V1[Section][8], density=Input_V1[Section][10], diffusion=Particle_Variables[i + 1][4])  # Schmidt Number
-            Particle_Variables[i + 1][7] = KN.Diffusion_Eff(zeta=Particle_Variables[i + 1][5], Sch=Particle_Variables[i + 1][6], Re=Input_V1[Section][12], Re_t=Reynolds_Lam_to_Turb)  # Diffusion Penetration
+            Particle_Variables[i + 1][5] = KN.Zeta(Diffusion=Particle_Variables[i + 1][4], Length=Flow_Properties[Section][2], Q=Flow_Properties[Section][6])  # Zeta
+            Particle_Variables[i + 1][6] = KN.Schmidt(visc=Flow_Properties[Section][8], density=Flow_Properties[Section][10], diffusion=Particle_Variables[i + 1][4])  # Schmidt Number
+            Particle_Variables[i + 1][7] = KN.Diffusion_Eff(zeta=Particle_Variables[i + 1][5], Sch=Particle_Variables[i + 1][6], Re=Flow_Properties[Section][12], Re_t=Reynolds_Lam_to_Turb)  # Diffusion Penetration
 
             # Gravitational penetration
             Particle_Variables[i + 1][8] = KN.Effective_Density(eff_k, eff_dm, diam[i])  # Effective density (kg/m3)
-            Particle_Variables[i + 1][9] = KN.Terminal_Velocity(dp=diam[i], rho_p=Particle_Variables[i + 1][8], Cc=Particle_Variables[i + 1][2], visc=Input_V1[Section][8])  # Terminal velocity m/s
-            Particle_Variables[i + 1][10] = KN.Gravit_Depos(Length=Input_V1[Section][2], V_ts=Particle_Variables[i + 1][9], d_tube=Input_V1[Section][1], U=Input_V1[Section][7])  # Gravitational deposition parameter
-            Particle_Variables[i + 1][11] = KN.Settling_Eff(Zg=Particle_Variables[i + 1][10], Re=Input_V1[Section][12], Re_t=Reynolds_Lam_to_Turb, theta=Input_V1[Section][4])  # Gravitational Penetration
-            Particle_Variables[i + 1][12] = KN.Quality_Of_Sett_Eff(V_ts=Particle_Variables[i + 1][9], theta=Input_V1[Section][4], U=Input_V1[Section][7])  # If it reaches to 1 we have reliable results
+            Particle_Variables[i + 1][9] = KN.Terminal_Velocity(dp=diam[i], rho_p=Particle_Variables[i + 1][8], Cc=Particle_Variables[i + 1][2], visc=Flow_Properties[Section][8])  # Terminal velocity m/s
+            Particle_Variables[i + 1][10] = KN.Gravit_Depos(Length=Flow_Properties[Section][2], V_ts=Particle_Variables[i + 1][9], d_tube=Flow_Properties[Section][1], U=Flow_Properties[Section][7])  # Gravitational deposition parameter
+            Particle_Variables[i + 1][11] = KN.Settling_Eff(Zg=Particle_Variables[i + 1][10], Re=Flow_Properties[Section][12], Re_t=Reynolds_Lam_to_Turb, theta=Flow_Properties[Section][4])  # Gravitational Penetration
+            Particle_Variables[i + 1][12] = KN.Quality_Of_Sett_Eff(V_ts=Particle_Variables[i + 1][9], theta=Flow_Properties[Section][4], U=Flow_Properties[Section][7])  # If it reaches to 1 we have reliable results
 
             # TURBULENT INERTIAL penetration
-            Particle_Variables[i + 1][13] = KN.Stokes(V_ts=Particle_Variables[i + 1][9], U=Input_V1[Section][7], Length=Input_V1[Section][1])  # Stokes number based on particle relaxation time, pipe velocity and radius
-            Particle_Variables[i + 1][14] = KN.Vt_Turb_Depos(Stk=Particle_Variables[i + 1][13], Re=Input_V1[Section][12], U=Input_V1[Section][7])  # Vt for turbulence deposition
-            Particle_Variables[i + 1][15] = KN.Inertial_Turb_Depos_Eff(d_tube=Input_V1[Section][1], Length=Input_V1[Section][2], Vt_Turb=Particle_Variables[i + 1][14], Q=Input_V1[Section][6], Re=Input_V1[Section][12],
+            Particle_Variables[i + 1][13] = KN.Stokes(V_ts=Particle_Variables[i + 1][9], U=Flow_Properties[Section][7], Length=Flow_Properties[Section][1])  # Stokes number based on particle relaxation time, pipe velocity and radius
+            Particle_Variables[i + 1][14] = KN.Vt_Turb_Depos(Stk=Particle_Variables[i + 1][13], Re=Flow_Properties[Section][12], U=Flow_Properties[Section][7])  # Vt for turbulence deposition
+            Particle_Variables[i + 1][15] = KN.Inertial_Turb_Depos_Eff(d_tube=Flow_Properties[Section][1], Length=Flow_Properties[Section][2], Vt_Turb=Particle_Variables[i + 1][14], Q=Flow_Properties[Section][6], Re=Flow_Properties[Section][12],
                                                                        Re_t=Reynolds_Lam_to_Turb)  # Turbulence Penetration
 
             # THERMOPHORESIS penetration
-            Particle_Variables[i + 1][16] = KN.K_Thermopho(Knud=Particle_Variables[i + 1][1], Cc=Particle_Variables[i + 1][2], Thermal_Cond_Fluid=Input_V1[Section][14], Thermal_Cond_Particle=Particle_thermal_conduction)
-            Particle_Variables[i + 1][17] = KN.Thermophoresis_Eff(Kth=Particle_Variables[i + 1][16], Re=Input_V1[Section][12], Pr=Input_V1[Section][15], Re_t=Reynolds_Lam_to_Turb, T_wall=General_Input[Section][10],
+            Particle_Variables[i + 1][16] = KN.K_Thermopho(Knud=Particle_Variables[i + 1][1], Cc=Particle_Variables[i + 1][2], Thermal_Cond_Fluid=Flow_Properties[Section][14], Thermal_Cond_Particle=Particle_thermal_conduction)
+            Particle_Variables[i + 1][17] = KN.Thermophoresis_Eff(Kth=Particle_Variables[i + 1][16], Re=Flow_Properties[Section][12], Pr=Flow_Properties[Section][15], Re_t=Reynolds_Lam_to_Turb, T_wall=General_Input[Section][10],
                                                                   T_entrance=General_Input[Section][11], T_Exit=General_Input[Section][12],
-                                                                  k=Input_V1[Section][14], Cp=Input_V1[Section][13], Q=Input_V1[Section][6], rho_g=Input_V1[Section][10], L=Input_V1[Section][2], D=Input_V1[Section][1])  # Thermophoresis Penetration
+                                                                  k=Flow_Properties[Section][14], Cp=Flow_Properties[Section][13], Q=Flow_Properties[Section][6], rho_g=Flow_Properties[Section][10], L=Flow_Properties[Section][2],
+                                                                  D=Flow_Properties[Section][1])  # Thermophoresis Penetration
             # Inertial penetration bend
-            Particle_Variables[i + 1][18] = KN.Inertial_Bend_Depos_Eff(Stk=Particle_Variables[i + 1][13], Bend_Rad=Input_V1[Section][3], Re=Input_V1[Section][12], Re_t=Reynolds_Lam_to_Turb)
+            Particle_Variables[i + 1][18] = KN.Inertial_Bend_Depos_Eff(Stk=Particle_Variables[i + 1][13], Bend_Rad=Flow_Properties[Section][3], Re=Flow_Properties[Section][12], Re_t=Reynolds_Lam_to_Turb)
 
             # Inertial deposition: contraction
-            if Input_V1[Section][19] < Input_V1[Section][16]:
-                Particle_Variables[i + 1][19] = KN.Inertial_Deposit_Contraction_Eff(Stk=Particle_Variables[i + 1][13], Theta_Rad=Input_V1[Section][18], A_o=Input_V1[Section][19], A_i=Input_V1[Section][16])
+            if Flow_Properties[Section][19] < Flow_Properties[Section][16]:
+                Particle_Variables[i + 1][19] = KN.Inertial_Deposit_Contraction_Eff(Stk=Particle_Variables[i + 1][13], Theta_Rad=Flow_Properties[Section][18], A_o=Flow_Properties[Section][19], A_i=Flow_Properties[Section][16])
             else:
                 Particle_Variables[i + 1][19] = 1
 
@@ -273,9 +292,10 @@ if __name__ == "__main__":
                 Particle_Variables[i + 1][18] = 1
                 Particle_Variables[i + 1][19] = 1
                 # INLET ASPIRATION penetration
-                Particle_Variables[i + 1][20] = KN.Aspiration_Eff(Stk=Particle_Variables[i + 1][13], U0=General_Input[Section][19], U=Input_V1[Section][7], theta_Rad=Input_V1[Section][20])
+                Particle_Variables[i + 1][20] = KN.Aspiration_Eff(Stk=Particle_Variables[i + 1][13], U0=General_Input[Section][19], U=Flow_Properties[Section][7], theta_Rad=Flow_Properties[Section][20])
                 # INLET Transportation penetration
-                Particle_Variables[i + 1][21] = KN.InletTrans_Eff(Stk=Particle_Variables[i + 1][13], U0=General_Input[Section][19], U=Input_V1[Section][7], theta_Rad=Input_V1[Section][20], Zg=Particle_Variables[i + 1][10], Re=Input_V1[Section][12])
+                Particle_Variables[i + 1][21] = KN.InletTrans_Eff(Stk=Particle_Variables[i + 1][13], U0=General_Input[Section][19], U=Flow_Properties[Section][7], theta_Rad=Flow_Properties[Section][20], Zg=Particle_Variables[i + 1][10],
+                                                                  Re=Flow_Properties[Section][12])
             else:
                 Particle_Variables[i + 1][20] = 1
                 Particle_Variables[i + 1][21] = 1
@@ -287,16 +307,16 @@ if __name__ == "__main__":
 
         # Saving Efficiencies
         for I in range(Nd):
-            if Input_V1[Section][0] != 0:
-                eta_Diff[Section][I] = Input_V1[Section][0]
-                eta_Grav[Section][I] = Input_V1[Section][0]
-                eta_Inert[Section][I] = Input_V1[Section][0]
-                eta_TP[Section][I] = Input_V1[Section][0]
-                eta_Bend[Section][I] = Input_V1[Section][0]
-                eta_Cont[Section][I] = Input_V1[Section][0]
-                eta_Asp[Section][I] = Input_V1[Section][0]
-                eta_Inlet[Section][I] = Input_V1[Section][0]
-                e_Total[Section][I] = Input_V1[Section][0]
+            if Flow_Properties[Section][0] != 0:
+                eta_Diff[Section][I] = Flow_Properties[Section][0]
+                eta_Grav[Section][I] = Flow_Properties[Section][0]
+                eta_Inert[Section][I] = Flow_Properties[Section][0]
+                eta_TP[Section][I] = Flow_Properties[Section][0]
+                eta_Bend[Section][I] = Flow_Properties[Section][0]
+                eta_Cont[Section][I] = Flow_Properties[Section][0]
+                eta_Asp[Section][I] = Flow_Properties[Section][0]
+                eta_Inlet[Section][I] = Flow_Properties[Section][0]
+                e_Total[Section][I] = Flow_Properties[Section][0]
             else:
                 eta_Diff[Section][I] = Particle_Variables[I + 1][7]
                 eta_Grav[Section][I] = Particle_Variables[I + 1][11]
@@ -342,7 +362,7 @@ if __name__ == "__main__":
         if Diffusion_Enable == 1:
             plt.plot(Diameter_Nano, eta_Diff[Section][:], 'mD--', label='Diffusion', alpha=0.8, markersize=4)
         if Gravitational_Enable == 1:
-            plt.plot(Diameter_Nano, eta_Grav[Section][:], 'gs:', label='Gravitational' + ', Re= ' + '{:.0f}'.format(Input_V1[Section][12]), alpha=0.7, markersize=4)
+            plt.plot(Diameter_Nano, eta_Grav[Section][:], 'gs:', label='Gravitational' + ', Re= ' + '{:.0f}'.format(Flow_Properties[Section][12]), alpha=0.7, markersize=4)
         if Inertial_Enable == 1:
             plt.plot(Diameter_Nano, eta_Inert[Section][:], 'co--', label='Inertial', alpha=0.6, markersize=3)
         if Thermophoretic_Enable == 1:
@@ -517,7 +537,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_diff.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_diff.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_diff.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_diff.write(0, i + Shift, diam[i])
@@ -528,7 +548,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_grav.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_grav.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_grav.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_grav.write(0, i + Shift, diam[i])
@@ -539,7 +559,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_inert.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_inert.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_inert.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_inert.write(0, i + Shift, diam[i])
@@ -550,7 +570,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_tp.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_tp.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_tp.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_tp.write(0, i + Shift, diam[i])
@@ -561,7 +581,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_be.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_be.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_be.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_be.write(0, i + Shift, diam[i])
@@ -572,7 +592,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_cont.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_cont.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_cont.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_cont.write(0, i + Shift, diam[i])
@@ -583,7 +603,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_asp.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_asp.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_asp.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_asp.write(0, i + Shift, diam[i])
@@ -594,7 +614,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_Inl.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_Inl.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_Inl.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_Inl.write(0, i + Shift, diam[i])
@@ -605,7 +625,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_total.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_total.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_total.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_total.write(0, i + Shift, diam[i])
@@ -622,7 +642,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_diff1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_diff1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_diff1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_diff1.write(0, i + Shift, diam[i])
@@ -633,7 +653,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_grav1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_grav1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_grav1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_grav1.write(0, i + Shift, diam[i])
@@ -644,7 +664,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_inert1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_inert1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_inert1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_inert1.write(0, i + Shift, diam[i])
@@ -655,7 +675,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_tp1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_tp1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_tp1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_tp1.write(0, i + Shift, diam[i])
@@ -666,7 +686,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_be1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_be1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_be1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_be1.write(0, i + Shift, diam[i])
@@ -677,7 +697,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_cont1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_cont1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_cont1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_cont1.write(0, i + Shift, diam[i])
@@ -688,7 +708,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_asp1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_asp1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_asp1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_asp1.write(0, i + Shift, diam[i])
@@ -699,7 +719,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_Inl1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_Inl1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_Inl1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_Inl1.write(0, i + Shift, diam[i])
@@ -710,7 +730,7 @@ if __name__ == "__main__":
         for i in range(Input_Dimension_Col):
             ws_total1.write(Section, i, General_Input[Section][i])
         for i in range(1, Computed_data_Column):
-            ws_total1.write(Section, i + Input_Dimension_Col, Input_V1[Section][i])
+            ws_total1.write(Section, i + Input_Dimension_Col, Flow_Properties[Section][i])
         for i in range(Nd):
             if Section == 0:
                 ws_total1.write(0, i + Shift, diam[i])

@@ -4,12 +4,10 @@ This program can calculate aerosol loss (1- penetration) for the sampling line w
 ![alt text](https://raw.githubusercontent.com/keyhanB/FlareNet-Particle-Penetration-Calculator/master/Graph%20Output/PASS3%20Line%20-%20Main%20Graph_Loss.jpg)
 ![alt text](https://raw.githubusercontent.com/keyhanB/FlareNet-Particle-Penetration-Calculator/master/Graph%20Output/PASS3%20Line%20-%20Main%20Graph.jpg)
 ## Getting Started
-
-aa
+Please read [User Guide](https://github.com/keyhanB/FlareNet-Particle-Penetration-Calculator/blob/master/FlareNet%20Particle%20Penetration%20Calculator%20(FPPC)%20User%20Guide.pdf).
 
 ### Prerequisites
-
-aa
+Having Python.
 
 
 ## Authors

@@ -5,11 +5,11 @@ This program can calculate aerosol loss (1- penetration) for the sampling line w
 ![alt text](https://raw.githubusercontent.com/keyhanB/FlareNet-Particle-Penetration-Calculator/master/Graph%20Output/PASS3%20Line%20-%20Main%20Graph.jpg)
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+aa
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+aa
 
 
 ## Authors

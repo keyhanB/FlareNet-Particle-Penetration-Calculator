@@ -7,7 +7,7 @@ This program can calculate aerosol loss (1- penetration) for the sampling line w
 Please read [User Guide](https://github.com/keyhanB/FlareNet-Particle-Penetration-Calculator/blob/master/FlareNet%20Particle%20Penetration%20Calculator%20(FPPC)%20User%20Guide.pdf).
 
 ### Prerequisites
-Having Python.
+Python 3.7
 
 
 ## Authors
@@ -21,7 +21,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* [Matthew Johnson](https://carleton.ca/mae/people/matthew-johnson/) and his Team in Carleton Universiry for supporting this project.
+* [Matthew Johnson](https://carleton.ca/mae/people/matthew-johnson/) and his Team in Carleton University for supporting this project.
 * Hat tip to anyone whose code was used
 
 

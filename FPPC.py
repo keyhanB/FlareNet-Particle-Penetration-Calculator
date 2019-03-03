@@ -54,6 +54,7 @@ if __name__ == "__main__":
     Particle_thermal_conduction = 0.2  # w/m/k
     eff_k = 0.418  # effective density variable for the result to be in kg/m^3
     eff_dm = 2.56  # effective density variable for the result to be in kg/m^3
+    Dilution_Temp = 293  # Kelvin for calculating Dilution
     Computed_data_Column = 25 + 1  # Number of variables of data for each section needed to be calculated (change if you want to add more variables)
     Number_Particle_Var = 22 + 1  # Number of variables of data for each particle diameter needed to be calculated (change if you want to add more variables)
     Y_limit_lower = 0.5  # Graph limit _ Y axis
@@ -71,6 +72,7 @@ if __name__ == "__main__":
     Inlet_Enable = 1  # Inlet transportation penetration plotting (0 for not plotting)
     Total_Enable = 1  # Total penetration plotting (0 for not plotting)
     Fit_Enable = 1  # Fitted polynomial plotting (0 for not plotting)
+
     #######################################################
     logging.info("FPPC Initiated")
     Flow_Properties = [[None for i in range(Computed_data_Column)] for j in range(Input_Dimension_Row)]
@@ -120,6 +122,13 @@ if __name__ == "__main__":
             else:
                 logging.info(f"Invalid Temperature for the section number {i}")
                 raise Exception("Invalid Temperature for calculation")
+        ####################
+        ####### Checking for dilution
+        if i != 1:
+            if General_Input[i - 1][14] < General_Input[i][14]:  # We have dilution
+                NewFlow = General_Input[i][14] - General_Input[i - 1][14]
+                General_Input[i][11] = (NewFlow * Dilution_Temp + General_Input[i - 1][14] * General_Input[i][11]) / (NewFlow + General_Input[i - 1][14])
+                General_Input[i][9] = General_Input[i][11]
         ####################
 
         Flow_Properties[i][0] = General_Input[i][4]  # ignore
